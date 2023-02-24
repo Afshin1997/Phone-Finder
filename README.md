@@ -19,6 +19,15 @@ The following libraries are required to run this script:
 - tqdm
 - Pillow
 
+If the mentioned packages are not installed on your system, You can insatll them through the following command:
+
+'''
+
+python my_script.py --input_file input.txt --output_file output.txt
+
+'''
+
+
 # Data Augmentation
 
 The data augmentation is performed on the input images to increase the size of the dataset. The following augmentations are applied to each image:
