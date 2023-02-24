@@ -22,8 +22,9 @@ The following libraries are required to run this script:
 If the mentioned packages are not installed on your system, You can insatll them through the following command:
 
 ```
-$
+pip install -r requirements.txt
 ```
+You must ensure that you are in the directory that contains the requirements.txt file, or you must specify the full path to the file.
 
 
 # Data Augmentation
