@@ -1,6 +1,8 @@
 
 # Introduction
 
+
+$x$
 This script is designed to train an object location model that can predict the location of an object in an image. The model uses a dataset of images with labeled object coordinates, and it performs data augmentation to increase the size of the dataset. The script uses a convolutional neural network with the Inception V3 architecture, and it trains the model using the mean squared error (MSE) loss function.
 
 # Requirements
