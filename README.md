@@ -77,11 +77,11 @@ To train the phone detector, run the **train_phone_finder.py** script with a sin
 
 The command line is as folllows:
 
-'''
+```
 
 python train_phone_finder.py ~/find_phone
 
-'''
+```
 
 This script will create another dataset based on some augmentation techniques and then start training the model based on that dataset.
 *Please consider that by retraining the model, the checkpoint file will be updated and for getting the best result, you should wait until the end of training procedure. If you like, you can you the provided trained model with the name of trained_model.pt*
@@ -92,11 +92,11 @@ To test the phone detector on a single image, run the **find_phone.py** script w
 
 The command line is as folllows:
 
-'''
+```
 
 python find_phone.py ~/find_phone_test_images/51.jpg
 
-'''
+```
 
 # Implementation tips
 
