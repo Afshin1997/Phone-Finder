@@ -12,6 +12,8 @@ A small labeled dataset has been provided, which consists of approximately 100 j
 
 ### Introduction
 
+
+$x$
 This script is designed to train an object location model that can predict the location of an object in an image. The model uses a dataset of images with labeled object coordinates, and it performs data augmentation to increase the size of the dataset. The script uses a convolutional neural network with the Inception V3 architecture, and it trains the model using the mean squared error (MSE) loss function.
 
 ### Requirements
@@ -33,11 +35,11 @@ The following libraries are required to run this script:
 
 If the mentioned packages are not installed on your system, You can insatll them using the following command:
 
-'''
-
+```
 pip install -r requirements.txt
+```
 
-'''
+You must ensure that you are in the directory that contains the requirements.txt file, or you must specify the full path to the file.
 
 To install the packages, you can navigate to the directory containing the requirements.txt file in a command prompt or terminal window, and then run the command above. This will install all of the required packages and their dependencies.
 
