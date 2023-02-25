@@ -111,6 +111,17 @@ The Learning Rate is extracted with the LRFinder package and it was about $7e-5$
 
 [1]: https://data-science-blog.com/blog/2022/04/11/how-to-choose-the-best-pre-trained-model-for-your-convolutional-neural-network/
 
+# Possible next Steps
+For the next steps, the following ideas would be considered:
+
+## Object Detection:
+If the task involves detecting multiple phones in an image, we could use object detection algorithms such as YOLO, SSD, or Faster R-CNN to detect and localize the phones.
+
+## Data Augmentation:
+Augmenting the dataset by adding more images with different backgrounds, lighting conditions, angles, and phone positions can help the model generalize better and improve its performance on new, unseen data.
+
+## Higher Complexity:
+By having the depth information in the labeled data, the distance to the phones can be detected. However, it appears that the size of the phones should be consistent across all images. This idea has various applications today, including racing competitions. Specifically, I am currently working on Path Planning of agile drones through the center of moving gates.
 
 # References
 
