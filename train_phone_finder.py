@@ -1,3 +1,4 @@
+import argparse
 import os
 import csv
 import glob
@@ -14,10 +15,17 @@ from tqdm import tqdm
 from PIL import Image
 from torchvision.transforms import functional as F
 
+
 class DataAugment:
-    def __init__(self, source_folder, destination_folder, image_file, csv_file, image_number, row,
+    def __init__(self, source_path, destination_folder, image_file, csv_file, image_number, row,
                  p_flip=0.5, max_rotation=15, max_translation=0.1):
-        self.source_folder = source_folder
+        """
+        Initializes the data augmentation class with the specified source and destination folders,
+        image and CSV files, and other parameters such as the probability of flipping an image,
+        the maximum rotation angle, and the maximum translation value.
+        """
+
+        self.source_path = source_path
         self.destination_folder = destination_folder
         self.image_number = image_number
         self.image_file = image_file
@@ -32,15 +40,22 @@ class DataAugment:
         self.p_flip = p_flip
         self.max_rotation = max_rotation
         self.max_translation = max_translation
-        self.image = cv2.imread(os.path.join(self.source_folder, self.image_file))
+        self.image = cv2.imread(os.path.join(self.source_path, self.image_file))
 
     def raw_img(self):
+        """
+        Saves the original image to the destination folder and writes the image numbers and CSV rows accordingly.
+        """
         cv2.imwrite(os.path.join(self.destination_folder, f"{self.image_number}.jpg"), self.image)
         self.row[0] = f"{self.image_number}.jpg"
         self.writer.writerow(self.row)
         self.image_number += 1
 
     def speckle(self):
+        """
+        Applies speckle noise to the image, saves the results to the destination folder, and writes the image numbers
+        and CSV rows accordingly.
+        """
         image = random_noise(self.image, mode="speckle", mean=0, var=0.3, clip=True)
         image = image * 255
         cv2.imwrite(os.path.join(self.destination_folder, f"{self.image_number}.jpg"), image)
@@ -49,6 +64,10 @@ class DataAugment:
         self.image_number += 1
 
     def gaussian(self):
+        """
+        Applies Gaussian noise to the image, saves the results to the destination folder, and writes the image numbers
+        and CSV rows accordingly.
+        """
         image = random_noise(self.image, mode="gaussian", mean=0, var=0.03)
         image = image * 255
         cv2.imwrite(os.path.join(self.destination_folder, f"{self.image_number}.jpg"), image)
@@ -57,6 +76,10 @@ class DataAugment:
         self.image_number += 1
 
     def sandp(self):
+        """
+        Applies salt and pepper noise to the image, saves the result to the destination folder, and writes the image
+        number and CSV row accordingly.
+        """
         image = random_noise(self.image, mode="s&p", amount=0.05)
         image = image * 255
         cv2.imwrite(os.path.join(self.destination_folder, f"{self.image_number}.jpg"), image)
@@ -65,6 +88,10 @@ class DataAugment:
         self.image_number += 1
 
     def flip_rot_trans(self):
+        """
+        Applies a combination of horizontal flipping, randomly rotation, and randomly translate to the images, saves the
+        results to the destination folder, and writes the images numbers  and CSV rows accordingly.
+        """
         image = F.hflip(Image.fromarray(self.image))
         self.row[1] = 1 - self.row[1]
 
@@ -79,6 +106,9 @@ class DataAugment:
         self.row[1] += dx / image.size[0]  # adjust the x-coordinate accordingly
         self.row[2] += dy / image.size[1]
 
+        self.row[1] = round(self.row[1], 4)
+        self.row[2] = round(self.row[2], 4)
+
         image = np.array(image)
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         cv2.imwrite(os.path.join(self.destination_folder, f"{self.image_number}.jpg"), image)
@@ -87,13 +117,20 @@ class DataAugment:
         self.image_number += 1
 
     def get_image_number(self):
+        # Return the number of images created so far
         return self.image_number
 
     def __del__(self):
+        # Close the CSV file handle
         self.csv_handle.close()
+
 
 class DatasetAugmentation:
     def __init__(self, source_path, destination_path):
+        """
+        Initializes the DatasetAugmentation object with the source and destination path, CSV file path, image number,
+        and header for the CSV file.
+        """
         self.source_path = source_path
         self.destination_path = destination_path
         self.csv_file = os.path.join(destination_folder, "labels.csv")
@@ -103,6 +140,11 @@ class DatasetAugmentation:
         self.jpg_files = glob.glob(os.path.join(source_path, '*.jpg'))
 
     def run(self):
+        """
+        It creates the destination folder if it doesn't exist and writes the header to the CSV file. Also, this function
+        only processes the JPG files in the source folder, and finally, it augments the images and writes the results to
+        the destination folder and CSV file.
+        """
         if not os.path.exists(self.destination_path):
             os.mkdir(self.destination_path)
             print("The destination path is created!!!!")
@@ -130,16 +172,25 @@ class DatasetAugmentation:
 
                         self.image_number = augmentor.get_image_number()
 
-class ObjLocDataset(torch.utils.data.Dataset):
 
+class ObjLocDataset(torch.utils.data.Dataset):
+    """
+    This is a PyTorch dataset class that loads images and corresponding object center positions from a CSV file.
+    The class takes a DataFrame and a destination folder as inputs.
+    """
     def __init__(self, df, destination_folder):
         self.df = df
         self.destination_folder = destination_folder
 
     def __len__(self):
+        # The length of the dataset is the length of the input DataFrame.
         return len(self.df)
 
     def __getitem__(self, idx):
+        """
+        loads the image at the specified row, converts it to a PyTorch tensor, and normalizes it. It also extracts
+        the object center position from the row and returns both the image tensor and the center position as a tuple.
+        """
         row = self.df.iloc[idx]
 
         X_pos = row.X_coordinate
@@ -155,13 +206,22 @@ class ObjLocDataset(torch.utils.data.Dataset):
 
         return img, center_pos
 
+
 class ObjLocModel(torch.nn.Module):
     def __init__(self, model_name, num_classes):
+        """
+        It initializes the object with the given model_name and number of num_classes, creating the backbone of the model.
+        """
         super(ObjLocModel, self).__init__()
 
         self.backbone = timm.create_model(model_name, pretrained=True, num_classes=num_classes)
 
     def forward(self, images, gt_center_poses=None):
+        """
+        Takes in an array of images and returns an array of center positions as predicted by the model. If ground truth
+        center positions are given, calculates the mean squared error loss between the predicted and true center
+        positions and returns both the predicted center positions and the loss.
+        """
         center_poses = self.backbone(images)
 
         if gt_center_poses != None:
@@ -170,73 +230,24 @@ class ObjLocModel(torch.nn.Module):
 
         return center_poses
 
-class LR_Finder:
-    def __init__(self, model, train_set, device):
-        self.model = model
-        self.train_set = train_set
-        self.device = device
-
-    def find(self, start_lr=1e-7, end_lr=10, num_iter=100, step_mode='exp', criterion=None, optimizer=None, batch_size=32):
-        # Set up the data loader
-        data_loader = DataLoader(self.train_set, batch_size=batch_size, shuffle=True)
-
-        # Set up the optimizer
-        if optimizer is None:
-            optimizer = torch.optim.Adam(self.model.parameters(), lr=start_lr)
-
-        # Set up the criterion
-        if criterion is None:
-            criterion = torch.nn.MSELoss()
-
-        # Set up the LR Finder
-        lr_finder = LRFinder(self.model, optimizer, criterion, device=self.device)
-
-        # Find the optimal learning rate
-        lr_finder.range_test(data_loader, start_lr=start_lr, end_lr=end_lr, num_iter=num_iter, step_mode=step_mode)
-
-        # Return the optimal learning rate
-        return lr_finder.lr_suggestion()
-
 class ModelTraining:
-    def __init__(self, source_folder, destination_folder, model_name, batch_size, epochs):
-        self.source_folder = source_folder
+    def __init__(self, destination_folder, model_name, batch_size, epochs):
+        """
+        It initializes the model training with the source folder, destination folder, model name, batch size, and number
+        of epochs for training.
+        """
         self.destination_folder = destination_folder
         self.model_name = model_name
         self.batch_size = batch_size
         self.epochs = epochs
-        self.csv_file = os.path.join(self.destination_folder, "labels.csv")
-
-    def run(self):
-        if torch.cuda.is_available():
-            device = "cuda:0"
-        else:
-            device = "cpu"
-
-        augment = DatasetAugmentation(self.source_folder, self.destination_folder)
-        augment.run()
-
-        df = pd.read_csv(self.csv_file)
-
-        train_df, valid_df = train_test_split(df, test_size=0.2, random_state=42)
-        valid_df, test_df = train_test_split(valid_df, test_size=0.5, random_state=42)
-
-        train_set = ObjLocDataset(train_df, self.destination_folder)
-        valid_set = ObjLocDataset(valid_df, self.destination_folder)
-        test_set = ObjLocDataset(test_df, self.destination_folder)
-
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=self.batch_size, shuffle=True)
-        valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=self.batch_size, shuffle=False)
-
-        model = ObjLocModel(self.model_name, num_classes=len(train_df.axes[1]) - 1)
-        model.to(device)
-
-        lr_finder = LR_Finder(model=model, train_set=train_set, device=device)
-        lr = lr_finder.find()
-
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        self.train_model(model, train_loader, valid_loader, optimizer, device, self.epochs)
 
     def train_model(self, model, train_loader, valid_loader, optimizer, device, epochs):
+        """
+        It takes in the model, data loader for training, data loader for validation, optimizer, device, and number of
+        epochs. The method loops through the epochs, calling the _train_step and _evaluate_step methods to train and
+        validate the model for each epoch, respectively. It saves the weights if the current validation loss is lower
+        than the best validation loss.
+        """
         best_valid_loss = np.Inf
 
         for n_epochs in range(epochs):
@@ -252,8 +263,7 @@ class ModelTraining:
             }
 
             if valid_loss < best_valid_loss:
-                model_checkpoint_path = "C:/Users/a.zeinaddini/Blender_files/gate_dataset/gate_dataset/train/internship8.pt"
-                os.makedirs(os.path.dirname(model_checkpoint_path), exist_ok=True)
+                model_checkpoint_path = "trained_model.pt"
                 torch.save(checkpoint, model_checkpoint_path)
 
                 print("WEIGHTS ARE SAVED")
@@ -262,6 +272,10 @@ class ModelTraining:
             print(f"Epoch: {n_epochs + 1} train loss: {train_loss} valid loss: {valid_loss}")
 
     def _train_step(self, model, train_loader, optimizer, device):
+        """
+        It takes in the model, data loader for training, optimizer, and device. The method loops through the training data,
+         performs forward and backward propagation, and returns the average training loss for the epoch.
+        """
         total_loss = 0.0
         model.train()
 
@@ -280,6 +294,10 @@ class ModelTraining:
         return total_loss / len(train_loader)
 
     def _evaluate_step(self, model, valid_loader, device):
+        """
+        It takes in the model, data loader for validation, and device. The method loops through the validation data and
+        returns the average validation loss for the epoch.
+        """
         total_loss = 0.0
         model.eval()
 
@@ -293,20 +311,29 @@ class ModelTraining:
 
             return total_loss / len(valid_loader)
 
+
 if __name__ == "__main__":
+
+    # Define command line arguments for the data folder path using argparse.
+    parser = argparse.ArgumentParser(description='Train phone finder')
+    parser.add_argument('data_folder', type=str, help='Path to the folder with labeled images and labels.txt')
+    args = parser.parse_args()
+
+    # Check for the availability of GPU and select the device (GPU or CPU).
     if torch.cuda.is_available():
         device = "cuda:0"
     else:
         device = "cpu"
 
-    batch_size = 8
-    epochs = 100
-    model_name = "inception_v3"
+    lr = 0.00007
+    batch_size = 4
+    epochs = 200
+    model_name = "densenet121"
 
-    source_folder = "C:/Users/a.zeinaddini/PycharmProjects/MachineLearning_Vision/find_phone"
-    destination_folder = "C:/Users/a.zeinaddini/PycharmProjects/MachineLearning_Vision/find_phone5"
+    source_path = os.path.expanduser(args.data_folder)
+    destination_folder = "new_dataset"
 
-    augment = DatasetAugmentation(source_folder, destination_folder)
+    augment = DatasetAugmentation(source_path, destination_folder)
     augment.run()
 
     csv_file = os.path.join(destination_folder, "labels.csv")
@@ -325,10 +352,7 @@ if __name__ == "__main__":
     model = ObjLocModel(model_name, num_classes=len(train_df.axes[1]) - 1)
     model.to(device)
 
-    lr_finder = LR_Finder(model=model, train_set=train_set, device=device)
-    lr = lr_finder.find()
-
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    train_model(model, train_loader, valid_loader, optimizer, device, epochs)
 
-
+    Model_training = ModelTraining(destination_folder, model_name, batch_size, epochs)
+    Model_training.train_model(model, train_loader, valid_loader, optimizer, device, epochs)

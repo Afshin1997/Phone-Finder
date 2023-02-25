@@ -1,9 +1,20 @@
+# Phone Detection Prototype
 
-# Introduction
+## Project Overview
+
+This is a prototype implementation of a visual object detection system that is able to detect a phone from a single RGB camera image. The system is designed to find the location of a phone dropped on the floor, and can detect a specific type of phone that the customer is interested in.
+
+## Dataset
+
+A small labeled dataset has been provided, which consists of approximately 100 jpg images of the floor from the factory building with a phone on it. The labels are contained in a file named **labels.txt**, which contains normalized coordinates of a phone for each picture. Each line of the **labels.txt** file is composed of **img_path**, $x$ (coordinate of the phone), and $y$ (coordinate of the phone) separated by spaces.
+
+## Train Model
+
+### Introduction
 
 This script is designed to train an object location model that can predict the location of an object in an image. The model uses a dataset of images with labeled object coordinates, and it performs data augmentation to increase the size of the dataset. The script uses a convolutional neural network with the Inception V3 architecture, and it trains the model using the mean squared error (MSE) loss function.
 
-# Requirements
+### Requirements
 
 The following libraries are required to run this script:
 
@@ -16,19 +27,21 @@ The following libraries are required to run this script:
 - torch
 - torch_lr_finder
 - scikit-image
+- scikit-learn
 - tqdm
 - Pillow
 
-If the mentioned packages are not installed on your system, You can insatll them through the following command:
+If the mentioned packages are not installed on your system, You can insatll them using the following command:
 
 '''
 
-python my_script.py --input_file input.txt --output_file output.txt
+pip install -r requirements.txt
 
 '''
 
+To install the packages, you can navigate to the directory containing the requirements.txt file in a command prompt or terminal window, and then run the command above. This will install all of the required packages and their dependencies.
 
-# Data Augmentation
+### Data Augmentation
 
 The data augmentation is performed on the input images to increase the size of the dataset. The following augmentations are applied to each image:
 
@@ -40,37 +53,66 @@ The data augmentation is performed on the input images to increase the size of t
 
 The augmented images are saved in a destination folder, and the corresponding object coordinates are saved in a CSV file.
 
-# Dataset
+### Preprocess Dataset
 
 The script reads the object coordinates from a CSV file that contains the filename of each image and the corresponding X and Y coordinates of the object in the image. The script splits the dataset into training, validation, and testing sets, and it creates a PyTorch Dataset object for each set.
 
-# Model Architecture
+### Model Architecture
 
-The model uses the Inception V3 architecture as the backbone, and it outputs the predicted X and Y coordinates of the object in the image. The model is trained using the MSE loss function.
-
-# Learning Rate Finder
-
-The learning rate finder is used to find the optimal learning rate for the model. The LR_Finder class takes the model and the training dataset as input, and it returns the suggested learning rate.
-
-# Model Training
-
-The model is trained using the Adam optimizer with the suggested learning rate. The training loop runs for the specified number of epochs, and the model with the best validation loss is saved. The script outputs the training and validation loss for each epoch.
-
-# Usage
-
-To use this script, you need to set the following parameters:
-
-'**source_folder**': the folder that contains the original images and the CSV file with the object coordinates
-
-'**destination_folder**': the folder where the augmented images and the new CSV file will be saved
-
-'**model_name**': the name of the pre-trained model to use as the backbone (e.g., "inception_v3")
-
-'**batch_size**': the batch size for training the model
-
-'**epochs**': the number of epochs to train the model
-
-Once the parameters are set, you can run the script. The script will perform the data augmentation, split the dataset into training, validation, and testing sets, train the model, and save the best model.
+The model uses the DenseNet 121 architecture as the backbone, and it outputs the predicted $X$ and $Y$ coordinates of the object in the image. The model is trained using the MSE loss function.
 
 
+### Model Training
+
+The model is trained using the Adam optimizer with the suggested learning rate by LRFinder package. The training loop runs for the specified number of epochs, and the model with the best validation loss is saved. The script outputs the training and validation loss for each epoch.
+
+### Phone Detection
+
+This script uses a pre-trained object detection model to detect the location of a phone in an image. The model is based on the DenseNet-121 architecture and is fine-tuned on a phone detection dataset. The model is saved in the **trained_model.pt** file.
+
+
+### Usage
+
+To train the phone detector, run the **train_phone_finder.py** script with a single command line argument which is the path to the folder with labeled images and **labels.txt**.
+
+The command line is as folllows:
+
+'''
+
+python train_phone_finder.py ~/find_phone
+
+'''
+
+This script will create another dataset based on some augmentation techniques and then start training the model based on that dataset.
+*Please consider that by retraining the model, the checkpoint file will be updated and for getting the best result, you should wait until the end of training procedure. If you like, you can you the provided trained model with the name of trained_model.pt*
+
+## Testing
+
+To test the phone detector on a single image, run the **find_phone.py** script with a single command line argument which is the path to the jpg image to be tested. The script may use data in the local folder previously generated by **train_phone_finder.py**. The output of the script is the normalized coordinates of the phone detected on the test image
+
+The command line is as folllows:
+
+'''
+
+python find_phone.py ~/find_phone_test_images/51.jpg
+
+'''
+
+# Implementation tips
+
+## DenseNet-121
+
+Since we have a small dataset and the complexity of the images is not too high, it's generally recommended to use a model that has a relatively smaller number of parameters to prevent overfitting. Among the models in [Pretrained Models Explanation][1], it shows that light versions of NASNet, ResNet, DenseNet have relatively smaller number of parameters and maybe a better fit for our task.
+Different algorithms with different version of DenseNet, NASNet, and ResNet are implemented the the best result are derived by DenseNet-121.
+
+## Learning Rate
+The Learning Rate is extracted with the LRFinder package and it was about $7e-5$
+
+
+[1]: https://data-science-blog.com/blog/2022/04/11/how-to-choose-the-best-pre-trained-model-for-your-convolutional-neural-network/
+
+
+# References
+
+[Pretrained Model Explanation](https://data-science-blog.com/blog/2022/04/11/how-to-choose-the-best-pre-trained-model-for-your-convolutional-neural-network/)
 
